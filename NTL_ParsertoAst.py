@@ -11,8 +11,17 @@ infinity = Literal("inf").setParseAction(lambda toks: float('inf'))
 # Ensure second_element correctly combines integer and infinity
 second_element = Or([integer, infinity])
 
+# Define the content of a filled interval
+interval_contents = integer + Suppress(',') + second_element
+filled_interval = Suppress('[') + Group(interval_contents) + Suppress(']')
+empty_interval = Suppress('[') + Suppress(']')
+
+# Combine filled and empty intervals using Or operator
+interval = filled_interval | empty_interval.setParseAction(lambda: [])
+
+
 # Define interval structure precisely
-interval = Suppress('[') + Group(integer + Suppress(',') + second_element) + Suppress(']')
+#interval = Suppress('[') + Group(integer + Suppress(',') + second_element) + Suppress(']')
 intervals = Suppress('{') + Group(delimitedList(interval)) + Suppress('}')
 
 # Define norm types and structure for a norm
@@ -52,7 +61,7 @@ def build_ast_from_parsed(parsed_input):
     :return: A Norm or BinaryOperation object based on the parsed input.
     """
     if (parsed_input[0] in {'O', 'F'}):
-        return Norm(parsed_input[0], parsed_input[2], parsed_input[1])
+        return Norm(parsed_input[0], parsed_input[2].asList(), parsed_input[1])
     else:
         return BinaryOperation(build_ast_from_parsed(parsed_input[0]), parsed_input[1],build_ast_from_parsed(parsed_input[2]))
 
