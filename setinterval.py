@@ -42,7 +42,7 @@ opt.add(max_index >= 0)  # Ensure at least one event exists
 for op, action, intervals in input_norms:
     if op == "O":
         obligation_found = False
-        for i in range(100):
+        for i in range(2):
             event = Select(trace, i)
             is_action = Event.action(event) == StringVal(action)
             in_time_any = False
@@ -52,9 +52,8 @@ for op, action, intervals in input_norms:
             obligation_found = Or(obligation_found, And(is_action, in_time_any))
             opt.add_soft(Implies(is_action, i <= max_index))
         opt.add(obligation_found)
-
     elif op == "F":
-        for i in range(100):
+        for i in range(2):
             event = Select(trace, i)
             is_action = Event.action(event) == StringVal(action)
             not_in_time_all = True
@@ -65,7 +64,8 @@ for op, action, intervals in input_norms:
 
 # Minimize the maximum index used in the trace
 opt.minimize(max_index)
-
+for c in opt.assertions():
+        print(c)
 # Solve and output the trace
 if opt.check() == sat:
     m = opt.model()

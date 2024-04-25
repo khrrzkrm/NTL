@@ -1,7 +1,7 @@
 import unittest
 from NTL_ParsertoAst import *
 from Z3_NTL_solver import *
-input_string = "F w {[3,4]}"
+input_string = " O a {[3,5]} & O b {[7,9]}"
 result=process_input(input_string)
 
 print(str(result))
