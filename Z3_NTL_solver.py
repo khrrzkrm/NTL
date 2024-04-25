@@ -4,11 +4,10 @@ Event = Datatype('Event')
 Event.declare('mk_event', ('action', StringSort()), ('time_stamp', IntSort()))
 Event = Event.create()
 Trace = ArraySort(IntSort(), Event)
-opt = Optimize()
-solver = Solver()
+
 trace = Const('trace', Trace)
 max_index = Int('max_index')
-opt.add(max_index >= 0)
+
 
 
 # Define the trace as an array of events indexed by integer
@@ -24,7 +23,7 @@ def z3_solver(formula):
                 return
             else:
                 obligation_found = False
-                for i in range(10):  # Define a reasonable upper limit for event indices
+                for i in range(2):  # Define a reasonable upper limit for event indices
                     event = Select(trace, i)
                     is_action = Event.action(event) == StringVal(action) 
                     for [t_min,t_max] in formula.interval_set:
@@ -36,35 +35,50 @@ def z3_solver(formula):
                             obligation_found = Or(obligation_found, And(is_action, in_time))
                     constraints.push(obligation_found)
                     #solver.push(obligation_found)
+                   
         elif formula.norm_type=="F":
             if not formula.interval_set:  # Check if the interval set is empty
                 print("Trivial Norm, please remove it from you formula ")
                 return
             else:
-                for i in range(100):
+                obligation_found = False
+                for i in range(10):
                     event = Select(trace, i)
                     is_action = Event.action(event) == StringVal(action)
                     for [t_min,t_max] in formula.interval_set:
                         if (t_max==float('inf')):
                             in_time = And(Event.time_stamp(event) >= t_min,Event.time_stamp(event) >= 0)
+                            in_time2 = And(Event.time_stamp(event) < t_min,Event.time_stamp(event) >= 0)
+                            obligation_found = And(obligation_found, And(is_action, in_time2))
                         else:
                             in_time = And(Event.time_stamp(event) >= t_min,Event.time_stamp(event) <= t_max,Event.time_stamp(event) >= 0 )
-                    constraints.push(Xor(is_action, in_time))
+                            in_time2 = And(Event.time_stamp(event) > t_min,Event.time_stamp(event) >t_max,Event.time_stamp(event) >= 0)
+                            obligation_found = Or(obligation_found, And(is_action, in_time2))
+                    #constraints.push(Xor(is_action, in_time))
+                    constraints.push(And(Implies(is_action, Not(in_time)),obligation_found))
                     #opt.add(Implies(is_action, Not(in_time))) #beautiful buf of Z3 when action has length>1
+        
     else:
-        print("TBA")            
+        print("tba")
+
+    return constraints
+        
+          
     
+def synthetize(constraints):
+    opt = Optimize()
+    opt.add(max_index >= 0)
     for c in constraints:
         opt.add(c)
     opt.minimize(max_index)
     print(type(opt.assertions()))
-    #for c in opt.assertions():
-     #   print(c)
+    for c in opt.assertions():
+        print(c)
     if opt.check() == sat:
         m = opt.model()
         highest_index = m.evaluate(max_index).as_long() 
         print("Satisfiable trace with minimum length:")
-        for i in range(highest_index + 1)if is_int_value(m.evaluate(max_index)) else None:
+        for i in range(highest_index + 1):
             event = m.evaluate(Select(trace, i))
             action = m.evaluate(Event.action(event)).as_string()
             time_stamp = m.evaluate(Event.time_stamp(event)).as_long()

@@ -1,11 +1,11 @@
 import unittest
 from NTL_ParsertoAst import *
 from Z3_NTL_solver import *
-input_string = "O a {[1,1]}"
+input_string = "F w {[3,4]}"
 result=process_input(input_string)
 
 print(str(result))
-z3_solver(result)
+synthetize(z3_solver(result))
 
 
 # class TestNormParser(unittest.TestCase):
