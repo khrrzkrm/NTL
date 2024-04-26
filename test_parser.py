@@ -1,11 +1,11 @@
 import unittest
 from NTL_ParsertoAst import *
-from Z3_NTL_solver import *
-input_string = " O a {[3,5]} & O b {[7,9]}"
+from z3_precise import *
+input_string = "(O a {[3,3]} & O b {[3,4]}) & (F a {[2,4]} || F a {[1,2]})"
 result=process_input(input_string)
 
 print(str(result))
-synthetize(z3_solver(result))
+synthetize(result,4)
 
 
 # class TestNormParser(unittest.TestCase):

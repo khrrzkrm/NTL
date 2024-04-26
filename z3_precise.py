@@ -1,4 +1,6 @@
 from z3 import *
+
+# Define the event datatypefrom z3 import *
 import random
 from NTL_Struct import Norm, BinaryOperation
 Event = Datatype('Event')
@@ -9,7 +11,7 @@ domain = IntSort()
 range_type = Event
 # Declare the array with fixed length
 trace = Array('trace', domain, range_type)
-num_events= Int('num_events')
+
 class ActionIndexMapping:
     def __init__(self):
         # Initialize an empty dictionary to store the action indices
@@ -40,17 +42,15 @@ class ActionIndexMapping:
         return labels
 
 
-def z3_solver(formula):
-    mapping = ActionIndexMapping()
+def z3_solver(formula,number):
+    num_events = number
     trace = Const('trace', Trace)
-    max_index = Int('max_index')
     match formula:
         case Norm(norm_type="O", action=action, interval_set=interval_set):
             sol=Solver()
             x=random.randint(1, 2)
             label='pt'+str(x)+action
             #label= 'j'
-            mapping.add_action_index(action,label)
             i= Int(label)
             if not formula.interval_set:  # Check if the interval set is empty
                 print("No satisfiable trace exists: Empty set of interval on Obligation")  
@@ -70,14 +70,19 @@ def z3_solver(formula):
                 timed_constraints= Or(timed_constraints.assertions())
             else:
                 timed_constraints= timed_constraints.assertions()[0]
-            sol.add(Exists([i],And(0<=i, i<=num_events,tarction==action,timed_constraints)))
-            
+            clauses = []
+            for x in range(0,num_events):
+                clauses.append(And(i==x,tarction==action,timed_constraints))
+            sol.add(Or(clauses))
+            # if len(sol.assertions()) != 1:
+            #     sol=And(Or(sol.assertions()))
+            # else: 
+            #     sol=And(sol.assertions()[0])
 
         case Norm(norm_type="F", action=action, interval_set=interval_set) if  formula.interval_set:
             sol=Solver()
             x=random.randint(1, 2)
             label='pt'+str(x)+action
-            mapping.add_action_index(action,label)
             i= Int(label)
             event_i= Select(trace, i)
             tarction=Event.action(event_i)
@@ -96,8 +101,8 @@ def z3_solver(formula):
 
             
         case BinaryOperation(left=left, operator=op, right=right):
-            sol_l = z3_solver(left)
-            sol_r = z3_solver(right)
+            sol_l = z3_solver(left,number)
+            sol_r = z3_solver(right,number)
             if op == "&":
                 sol=Solver()
                 sol= sol_l
@@ -108,6 +113,17 @@ def z3_solver(formula):
 
         case _:
             print("Unsupported formula type", file=sys.stderr)
+            return
+    # num_events= Int('num_events')
+    # sol.add(num_events==number)
+    timestamps = [Event.time_stamp(Select(trace, i)) for i in range(number)]
+    sol.add(Distinct(timestamps))
+    for i in range(number-1):
+        sol.add(Event.time_stamp(Select(trace, i)) >=0)
+    for i in range(number - 1):
+        sol.add(Event.time_stamp(Select(trace, i)) < Event.time_stamp(Select(trace, i + 1)))
+    for c in sol.assertions():
+        print(c)
     return sol
         
 def combine_solvers_and(left_solver, right_solver):
@@ -123,27 +139,15 @@ def combine_solvers_or(main_solver, left_solver, right_solver):
     for constraint in or_solver.assertions():
         main_solver.add(constraint)
 
-def synthetize(sol):
-    for x in range(1,8):
+def synthetize(formula,num_events):
+    for x in range(1,num_events):
         print(x)
-        rules=sol.assertions()
         temp_sol=Solver()
-        temp_sol.add(rules)
-        num_events= Int('num_events')
-        temp_sol.add(num_events == x)
-        
-        timestamps = [Event.time_stamp(Select(trace, i)) for i in range(x)]
-        temp_sol.add(Distinct(timestamps))
-        for i in range(x-1):
-            temp_sol.add(Event.time_stamp(Select(trace, i)) >=0)
-    #sol.add(ordering_constraint)
-        for i in range(x - 1):
-            temp_sol.add(Event.time_stamp(Select(trace, i)) < Event.time_stamp(Select(trace, i + 1)))
-        for c in temp_sol.assertions():
-                print(c)
+        temp_sol=z3_solver(formula,x)
         if temp_sol.check() == sat:
             m = temp_sol.model()
             print("Satisfiable trace with minimum length:")
+            print(x)
             for i in range(x):
                 event = Select(trace, i)
                 action = m.evaluate(Event.action(event)).as_string()
@@ -154,11 +158,3 @@ def synthetize(sol):
             temp_sol.reset()
             print("adding one more")
     print("No satisfiable trace exists.")
-   
-        
-
-
-
-
-
-                
