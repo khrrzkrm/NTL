@@ -1,11 +1,26 @@
 import unittest
+from reminder import *
 from NTL_ParsertoAst import *
 from z3_precise import *
-input_string = "(O a {[3,3]} & O b {[3,4]}) & (F a {[2,4]} || F a {[1,2]})"
-result=process_input(input_string)
+from NTL_Struct import BinaryOperation
+#from Z3_NTL_solver import *
 
-print(str(result))
-synthetize(result,4)
+
+input_string = "((  O e {[1,3]} || F b {[1,inf]} ) ; O d {[1,3]} );  O w {[1,3]}"
+#input_string = "(O a{[1,4]} & (O b {[8,8]} || F c {[11,15]}) & F c {[11,14]}); O d {[4,5]}"
+# parsing= parse_norms(input_string)
+# print(parsing)
+parsed= process_input(input_string)
+# # z=count_obligations(parsed)
+# # print("num events:",z)
+print(parsed)
+synthetize(parsed)
+
+
+#for z3 precise
+#result=process_input(input_string)
+# print(str(result))
+# synthetize(result,4)
 
 
 # class TestNormParser(unittest.TestCase):

@@ -31,8 +31,9 @@ norm = Group(norm_type + action + intervals)
 
 # Logical operators setup in infix notation
 expr = infixNotation(norm, [
-    (Literal("&"), 2, opAssoc.LEFT),
-    (Literal("||"), 2, opAssoc.LEFT),
+    (Literal("&"), 2, opAssoc.RIGHT),
+    (Literal("||"), 2, opAssoc.RIGHT),
+    (Literal(";"), 2, opAssoc.RIGHT),
 ])
 # Function to parse norms input
 def parse_norms(input_string):
@@ -54,6 +55,7 @@ def parse_norms2(input_string):
         return None    
     
 def build_ast_from_parsed(parsed_input):
+    #print(parsed_input)
     """
     Recursively builds an AST from a parsed input.
 
