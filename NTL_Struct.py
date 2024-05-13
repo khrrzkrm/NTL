@@ -1,4 +1,3 @@
-from z3 import Or as Zor
 class Interval:
     def __init__(self, tmin, tmax):
         # Validate tmax as either an integer or 'inf'
@@ -59,8 +58,8 @@ class Norm:
 
 class BinaryOperation:
     def __init__(self, left, operator, right):
-        if operator not in {';', '||','&'}:
-            raise ValueError(f"Invalid operator '{operator}'. Operator must be ';' or '&' or '||'.")
+        if operator not in {';', '||','&','>>'}:
+            raise ValueError(f"Invalid operator '{operator}'. Operator must be ';' or '&' or '||' or '>>'.")
         self.left = left
         self.operator = operator
         self.right = right
@@ -88,23 +87,28 @@ class BinaryOperation:
             count_right = 0
 
         return count_left + count_right
-    
-    def get_actions(self):
-        # Recursively collect the set of actions present in the binary operation
-        actions = set()
-        if isinstance(self.left, Action):
-            actions.add(self.left.action)
-        elif hasattr(self.left, 'get_actions'):
-            actions.update(self.left.get_actions())
-        if isinstance(self.right, Action):
-            actions.add(self.right.action)
-        elif hasattr(self.right, 'get_actions'):
-            actions.update(self.right.get_actions())
 
-        return actions
-
-
-    
+def negate(formula:BinaryOperation)-> BinaryOperation:
+    match formula:
+        case Norm(norm_type="O", action=action, interval_set=interval_set):
+            return  Norm(norm_type="F", action=action, interval_set=interval_set)
+        case Norm(norm_type="F", action=action, interval_set=interval_set):
+            return  Norm(norm_type="O", action=action, interval_set=interval_set)
+        case BinaryOperation(left=left, operator=op, right=right):
+                leftn=negate(left)
+                rightn=negate(right)
+                match op:
+                    case("&"):
+                        return BinaryOperation(leftn, "||", rightn)
+                    case("||"):
+                        return  BinaryOperation(leftn, "&", rightn)
+                    case(";"):
+                        return  BinaryOperation(leftn, "||", BinaryOperation(left, ";",rightn))
+                    case(">>"):
+                        return  BinaryOperation(leftn, ";", rightn)
+                        
+                    
+                        
 def count_obligations(binary_op):
     if isinstance(binary_op, Norm):
         return 1 if binary_op.norm_type == 'O' else 0
@@ -127,7 +131,11 @@ def get_alphabet(binary_op) -> list[str]:
             return set()
     # Convert the set of actions to a list before returning
     return list(recursive_get_alphabet(binary_op))
-    
+
+def rewrite_rep(formula):
+   match formula:
+       case(BinaryOperation(left=left,operator=">>",right= right)):
+           return BinaryOperation(left, "||", BinaryOperation(negate(left), ";", right))
 def print_actions(self):
     actions = self.get_actions()
     for action in actions:
@@ -151,9 +159,29 @@ if __name__ == "__main__":
     # Create binary operations
     conjunction = BinaryOperation(obligation, '&', prohibition)
     disjunction = BinaryOperation(obligation, '||', prohibition)
+    sequence =  BinaryOperation(obligation, ';', prohibition)
+    reparation= BinaryOperation(obligation, '>>', prohibition)
+    mixed    = BinaryOperation(conjunction ,'&',sequence)
 
     # Print the constructed expressions
-    print(obligation)  # Output: O {[1, 3], [5, ∞]} a
-    print(prohibition)  # Output: F {[1, 3], [5, ∞]} a
-    print(conjunction)  # Output: (O {[1, 3], [5, ∞]} a & F {[1, 3], [5, ∞]} a)
-    print(disjunction)  # Output: (O {[1, 3], [5, ∞]} a || F {[1, 3], [5, ∞]} a)
+    print(obligation)
+    print(negate(obligation))# Output: O {[1, 3], [5, ∞]} a
+    print("second")
+    print(prohibition) 
+    print(negate(prohibition))# Output: F {[1, 3], [5, ∞]} a
+    print("third")
+    print(conjunction)
+    print(negate(conjunction))  # Output: (O {[1, 3], [5, ∞]} a & F {[1, 3], [5, ∞]} a)
+    print("fourth")
+    print(disjunction)
+    print(negate(disjunction))  # Output: (O {[1, 3], [5, ∞]} a || F {[1, 3], [5, ∞]} a)
+    print("fifth")
+    print(sequence)
+    print(negate(sequence))
+    print("sixth")
+    print(mixed)
+    print(negate(mixed))
+    print("reparation")
+    print(reparation)
+    print(rewrite_rep(reparation))
+    #print(negate(reparation))

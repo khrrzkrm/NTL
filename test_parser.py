@@ -6,13 +6,13 @@ from NTL_Struct import BinaryOperation
 #from Z3_NTL_solver import *
 
 
-input_string = "((  O e {[1,3]} || F b {[1,inf]} ) ; O d {[1,3]} );  O w {[1,3]}"
-#input_string = "(O a{[1,4]} & (O b {[8,8]} || F c {[11,15]}) & F c {[11,14]}); O d {[4,5]}"
-# parsing= parse_norms(input_string)
-# print(parsing)
-parsed= process_input(input_string)
-# # z=count_obligations(parsed)
-# # print("num events:",z)
+
+#input_string =  "O e {[1,5]} || (F e {[1,5]} ; O b {[1, 3], [7, 19]}) "
+#input_string="(O er {[1,1]})"
+input_string =  "((O er {[1,5]} >> F b {[1, inf]}) ; O ab {[1,1]}) & F er {[1,5]}"
+input_string1= "(O e {[1, 5]} ; O ab {[1,2]}) || ((F e {[1, 5]}  ; O b {[1, 1]} ) ; O ab {[1,2]})"
+
+parsed = process_input(input_string)
 print(parsed)
 synthetize(parsed)
 

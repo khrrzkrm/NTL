@@ -34,6 +34,7 @@ expr = infixNotation(norm, [
     (Literal("&"), 2, opAssoc.RIGHT),
     (Literal("||"), 2, opAssoc.RIGHT),
     (Literal(";"), 2, opAssoc.RIGHT),
+    (Literal(">>"), 2, opAssoc.RIGHT),
 ])
 # Function to parse norms input
 def parse_norms(input_string):
